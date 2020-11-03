@@ -1,0 +1,26 @@
+Contents of /Users/crgt/Documents/work/odesk/Spayce/Code/iOS/SpayceBook/Supporting Files/Spayce-Prefix.pch
+-x
+objective-c
+-arch
+armv7s
+-std=gnu99
+-fobjc-arc
+-fpascal-strings
+-Os
+-isysroot
+/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.1.sdk
+-g
+-fvisibility=hidden
+-miphoneos-version-min=6.0
+-iquote
+-iquote
+-I/Users/crgt/Documents/work/odesk/Spayce/Code/iOS/DerivedData/Spayce/ArchiveIntermediates/Spayce/BuildProductsPath/Release-iphoneos/include
+-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include
+-F/Users/crgt/Documents/work/odesk/Spayce/Code/iOS/DerivedData/Spayce/ArchiveIntermediates/Spayce/BuildProductsPath/Release-iphoneos
+-F/Users/crgt/Documents/work/odesk/Spayce/Code/iOS
+-F/Users/crgt/Documents/work/odesk/Spayce/Code/iOS/SpayceBook/Third Party
+-DNS_BLOCK_ASSERTIONS=1
+arm-apple-darwin13.0.0
+"4.2.1 Compatible Apple LLVM 5.1 (clang-503.0.40)"
+SDK_PRODUCT_BUILD_VERSION=11D167
+11D167

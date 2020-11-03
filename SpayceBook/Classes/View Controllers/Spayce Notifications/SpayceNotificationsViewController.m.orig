@@ -1,0 +1,331 @@
+//
+//  SpayceNotificationsViewController.m
+//  Spayce
+//
+//  Created by Joseph Jupin on 10/4/13.
+//  Copyright (c) 2013 Spayce Inc. All rights reserved.
+//
+
+#import "SpayceNotificationsViewController.h"
+#import "SpayceNotificationViewCell.h"
+#import "LargeBlockingProgressView.h"
+
+#import "SpayceMeetMessageViewController.h"
+#import "BusinesscardViewController.h"
+#import "PersonalCardViewController.h"
+
+#import "ContactAndProfileManager.h"
+#import "DefaultKeyboardAccessoryView.h"
+#import "Stylesheet.h"
+#import "PNSManager.h"
+#import "SpayceNotification.h"
+#import "NSDate+Utils.h"
+#import "ObserverUtils.h"
+#import "StringConcatenationUtils.h"
+
+#import "PictureUtils.h"
+#import "NSDate+Utils.h"
+#import "UIFont_Expanded.h"
+#import "OSUtils.h"
+#import "SpayceCard.h"
+#import "Contact.h"
+
+@interface SpayceNotificationsViewController () {
+    NSMutableDictionary *userIdToContact;
+}
+
+@end
+
+@implementation SpayceNotificationsViewController
+
+static NSString * ThreadCellId = @"NotificationCell";
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+-(void) viewDidLoad
+{
+    self.navigationItem.title = [NSLocalizedString(@"SPAYCE", nil) uppercaseString];
+    
+    if (nil == userIdToContact) {
+        userIdToContact = [[NSMutableDictionary alloc] init];
+    }
+    
+    notificationsTableView = [[UITableView alloc] initWithFrame:self.view.frame style:UITableViewStyleGrouped];
+    notificationsTableView.backgroundView = nil;
+    notificationsTableView.backgroundColor = [UIColor clearColor];
+    notificationsTableView.separatorColor = [UIColor colorWithRGBHex:0xCEC8C2];
+    notificationsTableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
+    notificationsTableView.delegate = self;
+    notificationsTableView.dataSource = self;
+    [self.view addSubview:notificationsTableView];
+    
+    [notificationsTableView registerClass:[SpayceNotificationViewCell class]forCellReuseIdentifier:ThreadCellId];
+    
+    progressView = [[LargeBlockingProgressView alloc] initWithFrame:self.view.bounds];
+    progressView.label.text = @"Loading. Please, wait ...";
+    
+    
+}
+
+-(void) viewWillAppear:(BOOL)animate {
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleDidSortNotifications:)
+                                                 name:PNSManagerDidSortNotifications
+                                               object:nil];
+}
+
+
+-(void) viewWillDisappear:(BOOL)animated {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+
+-(void) viewWillLayoutSubviews
+{
+    notificationsTableView.frame = self.view.bounds;
+    if (progressView.superview != nil) {
+        progressView.frame = self.view.bounds;
+    }
+}
+
+
+
+
+#pragma mark -
+#pragma mark UITableViewDataSource and UITableViewDelegate
+
+-(NSInteger) numberOfSectionsInTableView:(UITableView *)tableView
+{
+    return [[PNSManager sharedInstance] getSectionsCount];
+}
+
+-(NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    NSArray *sortedByDate = [[PNSManager sharedInstance] getNotificationsForSection:section];
+    return MAX(sortedByDate.count, 1);
+}
+
+
+-(UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSArray *sortedByDate = [[PNSManager sharedInstance] getNotificationsForSection:indexPath.section];
+    
+    //
+    // if the sortedByDate notifications for this section is zero (or there are none)
+    // and the section is the first section -> then insert a 'no notifications' message text...
+    //
+    
+    if (sortedByDate.count == 0  && indexPath.section == 0) {
+        UITableViewCell * emptyCell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+        emptyCell.textLabel.font = [UIFont defaultFontWithSize:12];
+        emptyCell.textLabel.text = @"You have no notifications";
+        emptyCell.selectionStyle = UITableViewCellSelectionStyleNone;
+        emptyCell.backgroundView = nil;
+        return emptyCell;
+    }
+    
+    
+    SpayceNotificationViewCell * res = (SpayceNotificationViewCell *)[tableView dequeueReusableCellWithIdentifier:ThreadCellId];
+    
+    //
+    // instantiate a new cell if none already exists...
+    //
+    
+    if (res == nil) {
+        res = [[SpayceNotificationViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ThreadCellId];
+        res.backgroundColor = [UIColor whiteColor];
+        res.selectedBackgroundView = [[UIView alloc] init];
+        res.selectedBackgroundView.backgroundColor = [UIColor selectionColor];
+    }
+    
+    //
+    // Now, let's start filling it in.
+    //
+    
+    SpayceNotification *sn = sortedByDate[indexPath.row];
+    Contact *c = [[ContactAndProfileManager sharedInstance] fetchContactForUserId:sn.userId];
+    SpayceCard *card = (c.personalCard != nil) ? c.personalCard : c.businessCard;
+    
+    //
+    // TEMPY !!! Need a way to designate a notification as being read...  For now, setting background to lightGray
+    //
+    
+    res.backingView.backgroundColor = (sn.hasBeenRead) ? [UIColor lightGrayColor] : [UIColor clearColor];
+    
+    res.userNameLabel.text = sn.userName;
+    res.userPhotoView.imageView.url = card.mainPhotoUrl;
+    res.notificationTypeIconView.image = [SpayceNotification getIconForNotificationType:sn.notificationType];
+    res.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+
+    
+    NSString *imageCacheName = [NSString stringWithFormat:@"%d.jpg", card.mainPhotoAssetId];
+    
+    if ([PictureUtils hasStoredProfilePic:imageCacheName]) {
+        res.userPhotoView.imageView.image = [PictureUtils retrieveProfilePic:imageCacheName];
+    } else {  // no stored picture - put the temp image icon for now...
+        res.userPhotoView.imageView.image = [UIImage imageNamed:@"stockThumbnailPersonal.png"];
+    }
+    
+    res.notificationBodyLabel.text = sn.notificationText;
+    res.notificationDateAndTimeLabel.text = [NSDate stringForMessageDate:sn.notificationDate];
+    
+    // finally remove bottom borderline if it's the last entry for the day
+    
+    [res setLast:(indexPath.row == sortedByDate.count - 1)];
+    
+    return res;
+}
+
+-(void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    // set background view
+    [cell setBackgroundView:nil];
+    
+}
+
+-(CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    return 80;
+}
+
+-(CGFloat) tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    
+    return 30;
+}
+
+-(UIView *) tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    
+    UIView* res = [[UIView alloc] initWithFrame:CGRectMake(0,0,self.view.frame.size.width, 30)];
+    res.backgroundColor = [UIColor colorWithRGBHex:0xDDDACC];
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(10,2,self.view.frame.size.width-20, 30)];
+    titleLabel.text = [NSDate getPassedTime:[[PNSManager sharedInstance] getDateForSection:section]];
+    titleLabel.font = [UIFont myriadFontWithSize:13.0];
+    titleLabel.backgroundColor = [UIColor clearColor];
+    titleLabel.textColor = [UIColor grayColor];
+    titleLabel.textAlignment = NSTextAlignmentLeft;
+    [res addSubview:titleLabel];
+    return res;
+}
+
+-(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+<<<<<<< HEAD
+    NSArray *sortedByDate = [[PNSManager sharedInstance] getNotificationsForSection:indexPath.section];
+    SpayceNotification *sn = sortedByDate[indexPath.row];
+    if (NO == sn.hasBeenRead) {
+        sn.hasBeenRead = YES;
+        [[PNSManager sharedInstance] markAsReadNotifications:sortedByDate];
+        [tableView reloadData];
+    }
+
+    Contact *c = [[ContactAndProfileManager sharedInstance] getContactForUserId:sn.userId];
+=======
+    SpayceNotification *sn = [[PNSManager sharedInstance] getNotifications][indexPath.row];
+    Contact *c = [[ContactAndProfileManager sharedInstance] fetchContactForUserId:sn.userId];
+>>>>>>> 96bf08c80355a0d43274a9695e79b4cd30436c48
+    
+    int type = [SpayceNotification retrieveNotificationType:sn];
+    bool doComingSoon = NO;
+    UIViewController *segueToVC;
+    
+    switch (type) {
+        case NOTIFICATION_TYPE_MESSAGE:
+        case NOTIFICATION_TYPE_STATUS:
+            
+            segueToVC = [[SpayceMeetMessageViewController alloc] init];
+            break;
+            
+        case NOTIFICATION_TYPE_PROFESSIONAL_CARD:
+            segueToVC = [[BusinesscardViewController alloc] init];
+            ((BusinesscardViewController *)segueToVC).businessCard = c.businessCard;
+            break;
+            
+        case NOTIFICATION_TYPE_PERSONAL_CARD:
+            segueToVC = [[PersonalCardViewController alloc] init];
+            ((PersonalCardViewController *)segueToVC).personalCard = c.personalCard;
+            break;
+            
+        case NOTIFICATION_TYPE_EMAIL:
+            doComingSoon = YES;
+            break;
+            
+        case NOTIFICATION_TYPE_FACEBOOK:
+            doComingSoon = YES;
+            break;
+            
+        case NOTIFICATION_TYPE_TWITTER:
+            doComingSoon = YES;
+            break;
+            
+        case NOTIFICATION_TYPE_LINKEDIN:
+            doComingSoon = YES;
+            break;
+            
+        case NOTIFICATION_TYPE_UNKNOWN:
+            [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Unknown Type", nil)
+                                        message:@"Oops - something bad happend with tap for Notifications row.  Please try again later."
+                                       delegate:nil
+                              cancelButtonTitle:NSLocalizedString(@"OK", nil)
+                              otherButtonTitles:nil] show];
+            
+            return;
+            
+        default: {
+            doComingSoon = YES;
+        }
+            
+    }
+    
+    if (doComingSoon) {
+            [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Coming Soon!", nil)
+                                        message:nil
+                                       delegate:nil
+                              cancelButtonTitle:NSLocalizedString(@"OK", nil)
+                              otherButtonTitles:nil] show];
+
+    } else {
+        if (nil != segueToVC) {
+            [self.navigationController pushViewController:segueToVC animated:YES];
+        }
+    }
+}
+
+
+#pragma mark -
+#pragma mark KVM
+-(void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    /**
+    if([MessageManager sharedInstance].messagesLoading || [ContactAndProfileManager sharedInstance].contactsLoading)
+    {
+        [progressView.activityIndicator startAnimating];
+        [self.view addSubview:progressView];
+    }
+    else
+    {
+        [progressView.activityIndicator stopAnimating];
+        [progressView removeFromSuperview];
+        [self reloadData];
+    }
+     **/
+}
+
+
+
+#pragma mark -
+#pragma mark misc functions
+
+-(void) handleDidSortNotifications:(id)sender {
+    [notificationsTableView reloadData];
+}
+
+
+@end

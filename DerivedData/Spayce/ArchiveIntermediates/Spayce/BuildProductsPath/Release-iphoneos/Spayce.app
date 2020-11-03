@@ -1,0 +1,1 @@
+/Users/crgt/Documents/work/odesk/Spayce/Code/iOS/DerivedData/Spayce/ArchiveIntermediates/Spayce/InstallationBuildProductsLocation/Applications/Spayce.app

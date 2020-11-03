@@ -1,0 +1,23 @@
+//
+// Prefix header for all source files of the 'SpayceBook' target in the 'SpayceBook' project
+//
+
+#import <Availability.h>
+
+#ifdef __OBJC__
+    #import <UIKit/UIKit.h>
+    #import <Foundation/Foundation.h>
+    #import <SystemConfiguration/SystemConfiguration.h>
+    #import <MobileCoreServices/MobileCoreServices.h>
+
+    #import "UIColor+Expanded.h"
+    #import "UIFont+SPCAdditions.h"
+    #import "Enums.h"
+    #import "SPCNotifications.h"
+#endif
+
+#ifdef DEBUG
+    #define NSLog(__FORMAT__, ...) NSLog((@"%s [Line %d] " __FORMAT__), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+#else
+    #define NSLog(...) /* suppress NSLog when in release mode */
+#endif

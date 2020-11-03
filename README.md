@@ -1,2 +1,3 @@
 # Spayce
- Spayce iOS App(Top Featured on App Store)
+
+![Spayce icon](SpayceBook/Resources/Images/Icon@2x.png)
