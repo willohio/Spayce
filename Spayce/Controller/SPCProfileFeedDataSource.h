@@ -2,7 +2,7 @@
 //  SPCProfileFeedDataSource.h
 //  Spayce
 //
-//  Created by Pavel Dusatko on 8/29/14.
+//  Created by William Santiago on 8/29/14.
 //  Copyright (c) 2014 Spayce Inc. All rights reserved.
 //
 

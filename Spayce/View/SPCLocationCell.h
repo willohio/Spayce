@@ -2,7 +2,7 @@
 //  SPCLocationCell.h
 //  Spayce
 //
-//  Created by Pavel Dusatko on 5/14/14.
+//  Created by William Santiago on 5/14/14.
 //  Copyright (c) 2014 Spayce Inc. All rights reserved.
 //
 

@@ -2,7 +2,7 @@
 //  SPCNotificationBanner.h
 //  Spayce
 //
-//  Created by Pavel Dusatko on 6/12/14.
+//  Created by William Santiago on 6/12/14.
 //  Copyright (c) 2014 Spayce Inc. All rights reserved.
 //
 

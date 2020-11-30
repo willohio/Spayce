@@ -2,8 +2,8 @@
 //  NSObject+AssociatedObjects.m
 //  PADTiltViewController
 //
-//  Created by Pavel Dusatko on 5/4/14.
-//  Copyright (c) 2014 Pavel Dusatko. All rights reserved.
+//  Created by William Santiago on 5/4/14.
+//  Copyright (c) 2014 William Santiago. All rights reserved.
 //
 
 #import "NSObject+AssociatedObjects.h"

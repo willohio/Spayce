@@ -2,7 +2,7 @@
 //  SPCProfileBioCell.m
 //  Spayce
 //
-//  Created by Pavel Dusatko on 2014-10-23.
+//  Created by William Santiago on 2014-10-23.
 //  Copyright (c) 2014 Spayce Inc. All rights reserved.
 //
 
